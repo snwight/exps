@@ -1,0 +1,4 @@
+exps
+====
+
+various trivial exercises
