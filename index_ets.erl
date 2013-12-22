@@ -1,11 +1,3 @@
-%%%-------------------------------------------------------------------
-%%% @author Steve Wight
-%%% @copyright (C) 2013, Steve Wight
-%%% @doc
-%%%
-%%% @end
-%%% Created : 15 Dec 2013 by Steve Wight
-%%%-------------------------------------------------------------------
 -module(index_ets).
 -export([consume/1, print/0]).
 
