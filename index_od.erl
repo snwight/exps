@@ -1,5 +1,4 @@
 -module(index_od).
-
 -export([consume/1, print/1]).
 
 -define(PUNC, "\n\t\\\"\'.,!?@#$%+-=<>*^(){}[];:\/ ").
