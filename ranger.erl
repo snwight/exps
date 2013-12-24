@@ -27,7 +27,7 @@
 %%%===================================================================
 lookup(Range) -> gen_server:call(ranger, {lookup, Range}).
 
-add(Ranges) -> gen_server:cast(ranger, {add, Ranges}).
+add(Range) -> gen_server:cast(ranger, {add, Range}).
 
 delete(Range) -> gen_server:cast(ranger, {delete, Range}).
 
@@ -41,17 +41,17 @@ start_link() ->
 %%%===================================================================
 init([]) -> {ok, #state{}}.
 
-handle_call({lookup, Ranges}, _From, State) ->
-    Reply = lookup(Ranges, State#state.ranges),
+handle_call({lookup, Range}, _From, State) ->
+    Reply = lookup(Range, State#state.ranges),
     {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
-handle_cast({add, Ranges}, State) ->
-    {noreply, State#state{ranges = add(Ranges, State#state.ranges)}};
-handle_cast({delete, Ranges}, State) ->
-    {noreply, State#state{ranges = delete(Ranges, State#state.ranges)}};
+handle_cast({add, Range}, State) ->
+    {noreply, State#state{ranges = add(Range, State#state.ranges)}};
+handle_cast({delete, Range}, State) ->
+    {noreply, State#state{ranges = delete(Range, State#state.ranges)}};
 handle_cast(show, State) ->
     io:format("Ranges: ~p~n", [State#state.ranges]),
     {noreply, State};
