@@ -27,7 +27,7 @@
 %%%===================================================================
 lookup(Range) -> gen_server:call(ranger, {lookup, Range}).
 
-add(Range) -> gen_server:cast(ranger, {add, Range}).
+add(Ranges) -> gen_server:cast(ranger, {add, Ranges}).
 
 delete(Range) -> gen_server:cast(ranger, {delete, Range}).
 
@@ -41,17 +41,17 @@ start_link() ->
 %%%===================================================================
 init([]) -> {ok, #state{}}.
 
-handle_call({lookup, Range}, _From, State) ->
-    Reply = lookup(Range, State#state.ranges),
+handle_call({lookup, Ranges}, _From, State) ->
+    Reply = lookup(Ranges, State#state.ranges),
     {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
-handle_cast({add, Range}, State) ->
-    {noreply, State#state{ranges = add(Range, State#state.ranges)}};
-handle_cast({delete, Range}, State) ->
-    {noreply, State#state{ranges = delete(Range, State#state.ranges)}};
+handle_cast({add, Ranges}, State) ->
+    {noreply, State#state{ranges = add(Ranges, State#state.ranges)}};
+handle_cast({delete, Ranges}, State) ->
+    {noreply, State#state{ranges = delete(Ranges, State#state.ranges)}};
 handle_cast(show, State) ->
     io:format("Ranges: ~p~n", [State#state.ranges]),
     {noreply, State};
@@ -68,22 +68,34 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-add(Range, Ranges) ->
+add([], Ranges) -> 
+    Ranges;
+add(Range={_, _}, Ranges) -> 
+    add([Range], Ranges);
+add([Range={Low, High}|T], Ranges) ->
     Lookup = lookup(Range, Ranges),
-    io:format("lookup: ~p~n", [Lookup]),
-    case Lookup of
-	[{_,_}] -> ok;        %% same or enclosing range lready exists
-	[] -> lists:sort([Range|Ranges]);    %% insert brand new range
-	Matches = [{Lo,_}|T] ->     %% merge enclosing ranges into one 
-	    {_,Hi} = lists:nthtail(1,T),
-	    delete(Matches, Ranges),
-	    lists:sort([{Lo, Hi}|Ranges])
-    end.
+    NewRanges =
+	case Lookup of
+	    [Range] ->       %% same or enclosing range lready exists
+		Ranges;          
+	    [] ->                           %% insert brand new range
+		lists:sort([Range|Ranges]);
+	    Matches ->                      %% merge enclosing ranges 
+		{L, _} = lists:nth(1, Matches),
+		{_, H} = lists:last(Matches),
+		GCRange = delete(Matches, Ranges),
+		lists:sort([{min(Low, L), max(High, H)} | GCRange])
+	end,
+    add(T, NewRanges).
 
-delete([], _Ranges)     -> ok;
-delete(R={_,_}, Ranges) -> lists:delete(R, Ranges);
-delete([H|T], Ranges)   -> delete(T, lists:delete(H, Ranges)).
+delete([], Ranges) -> 
+    Ranges;
+delete(Range={_, _}, Ranges) -> 
+    delete([Range], Ranges);
+delete([Range|T], Ranges) ->
+    NewRange = lists:delete(Range, Ranges),
+    delete(T, NewRange).
 
 lookup({Low, High}, Ranges) ->
-    Base = lists:dropwhile(fun({_L, H}) -> H < Low end, Ranges),
-    lists:takewhile(fun({L, _H}) -> L =< High end, Base).
+    Base = lists:dropwhile(fun({_, H}) -> H < Low end, Ranges),
+    lists:takewhile(fun({L, _}) -> L =< High end, Base).
